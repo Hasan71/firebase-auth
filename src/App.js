@@ -45,7 +45,9 @@ function App() {
         email: '',
         password: '',
         photo: '',
-        isValid: false
+        isValid: false,
+        error: '',
+        existingUser: false
       }
       setUser(signedOutUser);
     })
@@ -78,19 +80,59 @@ function App() {
     setUser(newUserInfo);
   }
 
-  const createAccount = () => {
+  const createAccount = (event) => {
     if(user.isValid) {
-      console.log(user.email, user.password);
-      // console.log("Form is valid");
-      
+      firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
+      .then(res => {
+        console.log(res);
+        const createdUser = {...user};
+        createdUser.isSigned = true;
+        createdUser.error = '';
+        setUser(createdUser);
+      })
+      .catch(err => {
+        console.log(err.message);
+        const createdUser = {...user};
+        createdUser.isSigned = false;
+        createdUser.error = err.message;
+        setUser(createdUser);
+      })
+ 
     }
     else{
       console.log('Form is not Valid', user);
-      
     }
-    // eslint-disable-next-line no-restricted-globals
      event.preventDefault();
+     event.target.reset();
   }
+
+  const switchForm = event =>{
+    const createdUser = {...user};
+    createdUser.existingUser = event.target.checked;
+    setUser(createdUser);
+  }
+
+  const signInUser = (event) =>{
+    if(user.isValid) {
+      firebase.auth().signInWithEmailAndPassword(user.email, user.password)
+      .then(res => {
+        console.log(res);
+        const createdUser = {...user};
+        createdUser.isSigned = true;
+        createdUser.error = '';
+        setUser(createdUser);
+      })
+      .catch(err => {
+        console.log(err.message);
+        const createdUser = {...user};
+        createdUser.isSigned = false;
+        createdUser.error = err.message;
+        setUser(createdUser);
+      })
+    }
+    event.preventDefault();
+    event.target.reset();
+}
 
 
   return (
@@ -109,11 +151,23 @@ function App() {
       }
 
       <h1>Our own Authentication</h1>
-      <form onSubmit={createAccount}>
+      <input type="checkbox" name="switchForm" onChange={switchForm} id="switchForm"/>
+      <label htmlFor="switchForm"> Existisng User</label>
+      <form style={{display:user.existingUser ? 'block' : 'none'}} onSubmit={signInUser}>
+        <input type="text" onBlur={handleChange} name="email" placeholder="Enter your email" required/> <br/>
+        <input type="password" onBlur={handleChange} name="password" placeholder="Enter your passwod" required/> <br/>
+        <input type="submit" value="Sign In"/>
+      </form>
+
+      <form style={{display:user.existingUser ? 'none' : 'block'}} onSubmit={createAccount}>
+      <input type="text" onBlur={handleChange} name="name" placeholder="Enter your name" required/> <br/>
         <input type="text" onBlur={handleChange} name="email" placeholder="Enter your email" required/> <br/>
         <input type="password" onBlur={handleChange} name="password" placeholder="Enter your passwod" required/> <br/>
         <input type="submit" value="Create Account"/>
       </form>
+      {
+        user.error && <p style={{color:'red'}}> {user.error} </p>
+      }
 
     </div>
   );
